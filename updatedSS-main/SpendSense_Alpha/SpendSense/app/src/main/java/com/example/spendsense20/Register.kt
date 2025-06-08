@@ -40,7 +40,7 @@ class RegisterActivity : AppCompatActivity() {
             }
 
             if (!isValidPassword(password)) {
-                passwordEditText.error = "Password must be at least 6 characters, include uppercase, lowercase, and a number" // OWASP Foundation (2022). Password Policy Guidelines. Available at: https://owasp.org/www-community/password-special-requirements
+                passwordEditText.error = "Password must be at least 6 characters, include uppercase, lowercase, a special character and a number" // OWASP Foundation (2022). Password Policy Guidelines. Available at: https://owasp.org/www-community/password-special-requirements
                 return@setOnClickListener
             }
 //create new user in database
