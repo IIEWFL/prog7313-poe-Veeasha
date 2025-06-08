@@ -1,3 +1,11 @@
+/*PhilJay (2019). PhilJay/MPAndroidChart. [online] GitHub. Available at:
+https://github.com/PhilJay/MPAndroidChart.
+ Anon (2021). Build a realtime graph in Android | Pusher tutorials. [online]
+Pusher.com. Available at: https://pusher.com/tutorials/graph-android/
+[Accessed 6 Jun. 2025].
+GeeksforGeeks (2021). How to Create a BarChart in Android? [online]
+GeeksforGeeks. Available at: https://www.geeksforgeeks.org/how-to-create-a-
+barchart-in-android/.*/
 package com.example.spendsense20
 
 import android.app.DatePickerDialog
@@ -54,7 +62,7 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
             finish()
             return
         }
-
+//call from finances table in firebase 
         databaseRef = FirebaseDatabase.getInstance().getReference("finances").child(currentUser.uid)
 
         btnStartDate.text = "Start: ${dateFormat.format(startDate)}"
@@ -78,7 +86,7 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
             displayChart(goalWithIdList.map { it.goal })
         }
     }
-
+//date picker to choose a timeline
     private fun pickDate(isStart: Boolean) {
         val calendar = Calendar.getInstance()
         calendar.time = if (isStart) startDate else endDate
@@ -100,7 +108,7 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
             calendar.get(Calendar.DAY_OF_MONTH)
         ).show()
     }
-
+//load expenses from firebase 
     private fun loadExpensesForPeriod(startDate: Date, endDate: Date) {
         expenseSums.clear()
         databaseRef.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -125,13 +133,13 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
                 }
                 viewModel.allGoals.value?.let { displayChart(it.map { it.goal }) }
             }
-
+//error handling
             override fun onCancelled(error: DatabaseError) {
                 Toast.makeText(this@ExpenseBarGraphActivity, "Failed to load data: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
-
+//display the chart
     private fun displayChart(goals: List<Goal>) {
         val filteredGoals = goals.filter { goal ->
             try {
@@ -163,7 +171,7 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
             entriesActual.add(BarEntry(index.toFloat(), actualSum.toFloat()))
             entriesMax.add(BarEntry(index.toFloat(), maxSum.toFloat()))
         }
-
+//chart settings
         val setMin = BarDataSet(entriesMin, "Min").apply {
             color = Color.parseColor("#4A90E2") // Blue
             valueTextSize = 10f
@@ -219,7 +227,7 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
         barChart.groupBars(startX, groupSpace, barSpace)
         barChart.invalidate()
     }
-
+//setup chart ui
     private fun setupChart() {
         barChart.apply {
             setDrawBarShadow(false)
