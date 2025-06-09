@@ -42,6 +42,10 @@ SpendSense is a smart budgeting app built with Android and Firebase that helps u
 - **MVVM** – (Model-View-ViewModel) architecture pattern 
 
 ---
+
+# Youtube demonstration video 
+- **Link**: https://youtu.be/EP6hEKsN_UA
+---
 # References (is included in code as well): 
 Firebase Documentation and Tools
  Anon (2019). Saving Data | Firebase Realtime Database. [online] Firebase.
