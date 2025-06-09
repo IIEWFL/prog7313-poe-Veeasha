@@ -19,17 +19,16 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class ExpenseBarGraphActivity : AppCompatActivity() {
-
+    //initialize views
     private lateinit var btnStartDate: Button
     private lateinit var btnEndDate: Button
     private lateinit var btnLoadData: Button
     private lateinit var barChart: BarChart
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    private var startDate: Date = Calendar.getInstance().apply {
-        set(Calendar.DAY_OF_MONTH, 1)
-    }.time
-    private var endDate: Date = Calendar.getInstance().time
+    private var startDate: Date? = null
+    private var endDate: Date? = null
+
 
     private lateinit var databaseRef: DatabaseReference
     private lateinit var viewModel: GoalViewModel
@@ -39,10 +38,14 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        //bind view components
         setContentView(R.layout.activity_expense_bar_graph)
 
         btnStartDate = findViewById(R.id.btnStartDate)
         btnEndDate = findViewById(R.id.btnEndDate)
+        // Prompt user to pick start and end dates
+
+
         btnLoadData = findViewById(R.id.btnLoadData)
         barChart = findViewById(R.id.barChart)
 
@@ -54,24 +57,29 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
             finish()
             return
         }
-
+//call from finances table in firebase
         databaseRef = FirebaseDatabase.getInstance().getReference("finances").child(currentUser.uid)
 
-        btnStartDate.text = "Start: ${dateFormat.format(startDate)}"
-        btnEndDate.text = "End: ${dateFormat.format(endDate)}"
+
         val btnBack = findViewById<Button>(R.id.btnBack)
         btnBack.setOnClickListener { finish() }
-
+//date picker to choose a timeline
         btnStartDate.setOnClickListener { pickDate(true) }
         btnEndDate.setOnClickListener { pickDate(false) }
         btnLoadData.setOnClickListener {
-            if (startDate.after(endDate)) {
+            if (startDate == null || endDate == null) {
+                Toast.makeText(this, "Please select both start and end dates", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (startDate!!.after(endDate)) {
                 Toast.makeText(this, "Start date must be before end date", Toast.LENGTH_SHORT).show()
             } else {
-                loadExpensesForPeriod(startDate, endDate)
+                loadExpensesForPeriod(startDate!!, endDate!!)
             }
         }
-
+        /*PhilJay (2019). PhilJay/MPAndroidChart. [online] GitHub. Available at:
+        https://github.com/PhilJay/MPAndroidChart.*/
         setupChart()
 
         viewModel.allGoals.observe(this) { goalWithIdList ->
@@ -81,26 +89,34 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
 
     private fun pickDate(isStart: Boolean) {
         val calendar = Calendar.getInstance()
-        calendar.time = if (isStart) startDate else endDate
+        calendar.time = if (isStart) startDate ?: Date() else endDate ?: Date()
 
         DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
                 calendar.set(year, month, dayOfMonth)
+                //pick start date
                 if (isStart) {
                     startDate = calendar.time
-                    btnStartDate.text = "Start: ${dateFormat.format(startDate)}"
+                    btnStartDate.text = "Start: ${dateFormat.format(startDate!!)}"
+
+                    // pick end date 
                 } else {
                     endDate = calendar.time
-                    btnEndDate.text = "End: ${dateFormat.format(endDate)}"
+                    btnEndDate.text = "End: ${dateFormat.format(endDate!!)}"
                 }
             },
+            //fetch the timeline from the calendar 
             calendar.get(Calendar.YEAR),
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         ).show()
     }
 
+    //load expenses from firebase
+//Anon (2021). Build a realtime graph in Android | Pusher tutorials. [online]
+//Pusher.com. Available at: https://pusher.com/tutorials/graph-android/
+//[Accessed 6 Jun. 2025].
     private fun loadExpensesForPeriod(startDate: Date, endDate: Date) {
         expenseSums.clear()
         databaseRef.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -125,13 +141,16 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
                 }
                 viewModel.allGoals.value?.let { displayChart(it.map { it.goal }) }
             }
-
+            //error handling
             override fun onCancelled(error: DatabaseError) {
                 Toast.makeText(this@ExpenseBarGraphActivity, "Failed to load data: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
-
+    //display the chart
+    //Anon (2021). Build a realtime graph in Android | Pusher tutorials. [online]
+    //Pusher.com. Available at: https://pusher.com/tutorials/graph-android/
+    //[Accessed 6 Jun. 2025].
     private fun displayChart(goals: List<Goal>) {
         val filteredGoals = goals.filter { goal ->
             try {
@@ -165,41 +184,48 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
         }
 
         val setMin = BarDataSet(entriesMin, "Min").apply {
-            color = Color.parseColor("#4A90E2") // Blue
+            color = Color.parseColor("#4A90E2")
             valueTextSize = 10f
         }
         val setActual = BarDataSet(entriesActual, "Actual").apply {
-            color = Color.parseColor("#7ED321") // Green
+            color = Color.parseColor("#7ED321")
             valueTextSize = 10f
         }
         val setMax = BarDataSet(entriesMax, "Max").apply {
-            color = Color.parseColor("#D0021B") // Red
+            color = Color.parseColor("#D0021B")
             valueTextSize = 10f
         }
 
         val barData = BarData(setMin, setActual, setMax)
-        val groupSpace = 0.2f
+
+        val groupSpace = 0.1f
         val barSpace = 0.05f
         val barWidth = 0.25f
+        val groupCount = categories.size
 
         barData.barWidth = barWidth
+
         barChart.data = barData
 
-        val groupCount = categories.size
         val startX = 0f
-        val endX = startX + barData.getGroupWidth(groupSpace, barSpace) * groupCount
 
         barChart.xAxis.apply {
             valueFormatter = IndexAxisValueFormatter(categories)
-            position = XAxis.XAxisPosition.BOTTOM
             granularity = 1f
-            setDrawGridLines(false)
             isGranularityEnabled = true
-            setCenterAxisLabels(true)
-            axisMinimum = startX
-            axisMaximum = endX
-            labelCount = groupCount
+            position = XAxis.XAxisPosition.BOTTOM
+            setDrawGridLines(false)
             textSize = 12f
+
+            setCenterAxisLabels(true)
+
+            axisMinimum = startX
+            axisMaximum = startX + barData.getGroupWidth(groupSpace, barSpace) * groupCount
+            labelCount = groupCount
+
+            xOffset = 0f
+            spaceMin = 0f
+            spaceMax = 0f
         }
 
         barChart.axisLeft.apply {
@@ -215,11 +241,17 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
         }
 
         barChart.description.isEnabled = false
-        barChart.setVisibleXRangeMaximum(groupCount.toFloat())
+
+        // Group bars after axis min/max setup
         barChart.groupBars(startX, groupSpace, barSpace)
+
         barChart.invalidate()
     }
-
+    //setup chart ui
+    //GeeksforGeeks (2021). How to Create a BarChart in Android? [online]
+    //GeeksforGeeks. Available at: https://www.geeksforgeeks.org/how-to-create-a-
+    //barchart-in-android/.*/
+    //[Accessed 6 Jun. 2025]
     private fun setupChart() {
         barChart.apply {
             setDrawBarShadow(false)
@@ -230,7 +262,7 @@ class ExpenseBarGraphActivity : AppCompatActivity() {
             setPinchZoom(true)
             setScaleEnabled(true)
             animateY(800)
-            setExtraBottomOffset(20f)
+            setExtraBottomOffset(20f) // More bottom offset to prevent label cutoff
         }
     }
 }

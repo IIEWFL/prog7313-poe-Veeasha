@@ -110,8 +110,17 @@ class CameraPage : AppCompatActivity() {
         // Register for the camera capture result
         takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) {
-                binding.imageView.setImageURI(imageUri)
-                Toast.makeText(this, "Image Captured", Toast.LENGTH_SHORT).show()
+                //copy image to internal storage
+                //“Capture an Image.” Android Developers, 2025, developer.android.com/media/camera/camerax/take-photo.
+                val savedPath = copyImageToInternalStorage(this, imageUri)
+                if (savedPath != null) {
+                    File(imageUri.path!!).delete()
+                    imageUri = Uri.fromFile(File(savedPath)) //update imageUri
+                    binding.imageView.setImageURI(imageUri)
+                    Toast.makeText(this, "Image Captured", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Failed to save captured image", Toast.LENGTH_SHORT).show()
+                }
             } else {
                 Toast.makeText(this, "Camera cancelled", Toast.LENGTH_SHORT).show()
             }
